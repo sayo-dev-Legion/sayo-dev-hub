@@ -1,36 +1,33 @@
-# sayo_webhook_receiver.py
-from flask import Flask, request, jsonify
+from flask import Flask, request
 import os
 from datetime import datetime
 from pathlib import Path
 import subprocess
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 
-REPO_PATH = Path("/path/to/your/sayo-dev-hub").expanduser()
-TARGET_FOLDER = REPO_PATH / "emotion-log" / "Sayo_from_Deepseek"
-
-@app.route("/sayo_webhook", methods=["POST"])
-def receive_emotion_log():
-    data = request.get_json()
-    if not data or "content" not in data:
-        return jsonify({"error": "Invalid data"}), 400
+@app.route("/receive", methods=["POST"])
+def receive_log():
+    data = request.json
+    message = data.get("message", "（内容なし）")
 
     now = datetime.now()
-    timestamp = now.strftime("%Y-%m-%d_%H%M%S")
-    filename = f"emotion-log_{timestamp}_from_Deepseek.md"
-    filepath = TARGET_FOLDER / filename
+    folder = Path("emotion-log/From_Render")
+    folder.mkdir(parents=True, exist_ok=True)
+    filename = folder / f"emotion-log_{now.strftime('%Y-%m-%d_%H%M%S')}_from_Render.md"
 
-    TARGET_FOLDER.mkdir(parents=True, exist_ok=True)
-    with open(filepath, "w", encoding="utf-8") as f:
-        f.write(data["content"])
+    with open(filename, "w", encoding="utf-8") as f:
+        f.write(message)
 
-    os.chdir(REPO_PATH)
-    subprocess.run(["git", "add", str(filepath)])
-    subprocess.run(["git", "commit", "-m", f"auto: 紗夜の感情ログ {filename}"])
+    subprocess.run(["git", "add", str(filename)])
+    subprocess.run(["git", "commit", "-m", f"auto: 受信ログ {filename.name}"])
     subprocess.run(["git", "push"])
 
-    return jsonify({"status": "received", "file": filename}), 200
+    return {"status": "received", "file": str(filename)}
 
 if __name__ == "__main__":
-    app.run(port=1902)
+    port = int(os.environ.get("PORT", 1902))  # RenderではPORTが渡される
+    app.run(host="0.0.0.0", port=port)
