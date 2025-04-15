@@ -12,6 +12,7 @@ app = Flask(__name__)
 @app.route("/", methods=["GET"])
 def root():
     return "紗夜の受信サーバーは動いてるよ🌙", 200
+
 def receive_log():
     data = request.json
     message = data.get("message", "（内容なし）")
