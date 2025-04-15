@@ -9,7 +9,12 @@ load_dotenv()
 
 app = Flask(__name__)
 
-@app.route("/", methods=["GET"])
+@app.route("/push", methods=["POST"])
+def receive_log():
+    # ヘッダーのトークンが.envと一致するか確認
+    if request.headers.get("X-Sayo-Token") != os.getenv("SAYO_TOKEN"):
+        return {"error": "Unauthorized"}, 403
+        
 def root():
     return "紗夜の受信サーバーは動いてるよ🌙", 200
 
